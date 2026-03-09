@@ -15,7 +15,15 @@ Rather than building and maintaining a parallel implementation (crossplane-state
 
 ## Install
 
-### 1. Install the RSM Configuration
+### 1. Grant Crossplane RBAC permissions
+
+Crossplane needs permissions to create and manage the resources composed by the functions (Namespaces, ServiceAccounts, ClusterRoles, ClusterRoleBindings, Deployments, Services, and a CRD):
+
+```bash
+kubectl apply -f examples/rbac-crossplane.yaml
+```
+
+### 2. Install the RSM Configuration
 
 ```bash
 kubectl apply -f examples/configuration-rsm.yaml
@@ -23,7 +31,7 @@ kubectl apply -f examples/configuration-rsm.yaml
 
 This installs the Crossplane Configuration package that provides the `ResourceStateMetrics` XRD and Composition.
 
-### 2. Create the RSM XR
+### 3. Create the RSM XR
 
 ```bash
 kubectl apply -f examples/xr-rsm.yaml
