@@ -1,0 +1,55 @@
+# PromQL tests for examples/metrics/provider/healthy.yaml
+# Run with: promtool test rules promql-tests/provider/healthy_test.yaml
+#
+# Metrics: provider_healthy, provider_installed (gauges)
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # provider_healthy
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-helm:v1.2.0",revision="upbound-provider-helm-4e2bada791af",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-helm",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-kubernetes:v1.2.1",revision="upbound-provider-kubernetes-87e2ce59b20b",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-kubernetes",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-aws-eks:v2.4.0",revision="upbound-provider-aws-eks-04932354844f",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-eks",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-aws-iam:v2.4.0",revision="upbound-provider-aws-iam-080e40737a30",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-iam",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-aws-ec2:v2.4.0",revision="upbound-provider-aws-ec2-2b7b5e81da49",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-ec2",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_healthy{package="xpkg.upbound.io/upbound/provider-family-aws:v2.4.0",revision="upbound-provider-family-aws-9dca2646e322",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-family-aws",namespace=""}'
+        values: "1"
+      # provider_installed
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-helm:v1.2.0",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-helm",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-kubernetes:v1.2.1",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-kubernetes",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-aws-eks:v2.4.0",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-eks",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-aws-iam:v2.4.0",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-iam",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-aws-ec2:v2.4.0",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-aws-ec2",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_provider_installed{package="xpkg.upbound.io/upbound/provider-family-aws:v2.4.0",group="pkg.crossplane.io",version="v1",kind="Provider",name="upbound-provider-family-aws",namespace=""}'
+        values: "1"
+
+    promql_expr_test:
+      # Unhealthy providers (all healthy, so empty)
+      - expr: kube_customresource_provider_healthy == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Specific provider health check (is healthy, so == 0 returns empty)
+      - expr: kube_customresource_provider_healthy{name="upbound-provider-aws-eks"} == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Provider health percentage (100%)
+      - expr: (sum(kube_customresource_provider_healthy) / count(kube_customresource_provider_healthy)) * 100
+        eval_time: 0m
+        exp_samples:
+          - labels: '{}'
+            value: 100

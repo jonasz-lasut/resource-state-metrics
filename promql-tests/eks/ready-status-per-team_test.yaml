@@ -1,0 +1,34 @@
+# PromQL tests for examples/metrics/eks/ready-status-per-team.yaml
+# Run with: promtool test rules promql-tests/eks/ready-status-per-team_test.yaml
+#
+# Metric: eks_team_ready (gauge) - 1=ready, 0=not ready (per team via label selector)
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # team-a RMM (selectors.label: "team=team-a")
+      - series: 'kube_customresource_eks_team_ready{region="eu-west-1",team="team-a",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_team_ready{region="us-west-2",team="team-a",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "0"
+      # team-b RMM (selectors.label: "team=team-b")
+      - series: 'kube_customresource_eks_team_ready{region="us-east-1",team="team-b",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "0"
+
+    promql_expr_test:
+      # Not-ready team-a clusters
+      - expr: kube_customresource_eks_team_ready{team="team-a"} == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_team_ready{region="eu-west-1",team="team-a",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_team_ready{region="us-west-2",team="team-a",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 0
+
+      # Team-a SLO percentage - when no XRs are ready, sum(== 1) returns nil so division is nil
+      - expr: (sum(kube_customresource_eks_team_ready{team="team-a"} == 1) / count(kube_customresource_eks_team_ready{team="team-a"})) * 100
+        eval_time: 0m
+        exp_samples: []

@@ -1,0 +1,62 @@
+# Example: Correlate Managed Resources with Parent XR via Annotations and Labels
+# Use Case: Attribute MR health to the parent Composite (XR) and Claim that owns it
+# Resolver: CEL (Common Expression Language)
+#
+# Crossplane automatically sets metadata on Managed Resources that link them
+# back to their parent resources:
+#   - label crossplane.io/composite: name of the parent XR
+#   - annotation crossplane.io/composition-resource-name: resource name within the Composition
+#   - annotation crossplane.io/external-name: the external cloud resource name
+#
+# This example extracts these as Prometheus labels so you can:
+#   1. Join MR metrics with XR metrics to see the full resource tree
+#   2. Filter MR metrics by their parent XR
+#   3. Build dashboards that show MR health grouped by owning XR
+#
+# Metrics Generated:
+# - kube_customresource_eks_mr_cluster_info (gauge): Always 1, with parent correlation labels
+#
+# PromQL Queries:
+# - List all MRs with their parent XR:
+#     kube_customresource_eks_mr_cluster_info
+# - Find all MRs belonging to a specific XR:
+#     kube_customresource_eks_mr_cluster_info{composite="production-eks"}
+# - Join MR sync status with parent correlation info:
+#     kube_customresource_eks_mr_cluster_synced * on(name,namespace) group_left(composite, composition_resource, external_name) kube_customresource_eks_mr_cluster_info
+# - Not-synced MRs grouped by parent XR:
+#     sum by (composite) (kube_customresource_eks_mr_cluster_synced * on(name,namespace) group_left(composite) kube_customresource_eks_mr_cluster_info == 0)
+#
+# Target MR:
+#   apiVersion: eks.aws.m.upbound.io/v1beta1
+#   kind: Cluster
+
+apiVersion: resource-state-metrics.instrumentation.k8s-sigs.io/v1alpha1
+kind: ResourceMetricsMonitor
+metadata:
+  name: mr-cluster-parent-correlation
+  namespace: resource-state-metrics
+spec:
+  configuration:
+    stores:
+      - group: "eks.aws.m.upbound.io"
+        version: "v1beta1"
+        kind: "Cluster"
+        resource: "clusters"
+        resolver: "cel"
+        families:
+          - name: "eks_mr_cluster_info"
+            help: "Information about EKS Cluster managed resources with parent correlation (always 1)"
+            metrics:
+              - labels:
+                  # Parent XR name from Crossplane label
+                  - name: "composite"
+                    value: "o.metadata.labels['crossplane.io/composite'] != null ? o.metadata.labels['crossplane.io/composite'] : 'unknown'"
+                  # Composition resource name from Crossplane annotation
+                  - name: "composition_resource"
+                    value: "o.metadata.annotations['crossplane.io/composition-resource-name'] != null ? o.metadata.annotations['crossplane.io/composition-resource-name'] : 'unknown'"
+                  # External cloud resource name from Crossplane annotation
+                  - name: "external_name"
+                    value: "o.metadata.annotations['crossplane.io/external-name'] != null ? o.metadata.annotations['crossplane.io/external-name'] : 'unknown'"
+                  - name: "region"
+                    value: "o.spec.forProvider.region != null ? o.spec.forProvider.region : 'unknown'"
+                value: "1"

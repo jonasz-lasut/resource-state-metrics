@@ -1,0 +1,53 @@
+# Example: Track Managed Resource Ready and Sync Status
+# Use Case: Monitor EKS MR provisioning - alert when managed resources are not synced
+# Resolver: CEL (Common Expression Language)
+#
+# This example targets the actual cloud resources (Managed Resources) created
+# by Crossplane when an EKS XR is provisioned, NOT the XR itself.
+#
+# Metrics Generated:
+# - kube_customresource_eks_mr_cluster_synced (gauge): 1=synced, 0=not synced
+# - kube_customresource_eks_mr_cluster_ready (gauge): 1=ready, 0=not ready
+#
+# PromQL Queries:
+# - Not-synced MRs: kube_customresource_eks_mr_cluster_synced == 0
+# - Group sync failures by reason: sum by (sync_reason) (kube_customresource_eks_mr_cluster_synced == 0)
+# - Alert on ReconcileError: kube_customresource_eks_mr_cluster_synced{sync_reason="ReconcileError"} == 0
+# - Not-ready MRs: kube_customresource_eks_mr_cluster_ready == 0
+#
+# Target MR:
+#   apiVersion: eks.aws.m.upbound.io/v1beta1
+#   kind: Cluster
+
+apiVersion: resource-state-metrics.instrumentation.k8s-sigs.io/v1alpha1
+kind: ResourceMetricsMonitor
+metadata:
+  name: mr-cluster-ready-status
+  namespace: resource-state-metrics
+spec:
+  configuration:
+    stores:
+      - group: "eks.aws.m.upbound.io"
+        version: "v1beta1"
+        kind: "Cluster"
+        resource: "clusters"
+        resolver: "cel"
+        families:
+          - name: "eks_mr_cluster_synced"
+            help: "Synced status of EKS Cluster managed resources (1=synced, 0=not synced)"
+            metrics:
+              - labels:
+                  - name: "region"
+                    value: "o.spec.forProvider.region != null ? o.spec.forProvider.region : 'unknown'"
+                  - name: "sync_reason"
+                    value: |
+                      o.status.conditions.exists(c, c.type == 'Synced') ?
+                        o.status.conditions.filter(c, c.type == 'Synced')[0].reason : 'Unknown'
+                value: "o.status.conditions.exists(c, c.type == 'Synced' && c.status == 'True') ? 1 : 0"
+          - name: "eks_mr_cluster_ready"
+            help: "Ready status of EKS Cluster managed resources (1=ready, 0=not ready)"
+            metrics:
+              - labels:
+                  - name: "region"
+                    value: "o.spec.forProvider.region != null ? o.spec.forProvider.region : 'unknown'"
+                value: "o.status.conditions.exists(c, c.type == 'Ready' && c.status == 'True') ? 1 : 0"

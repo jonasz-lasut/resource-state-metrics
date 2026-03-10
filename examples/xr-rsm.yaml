@@ -11,6 +11,7 @@ spec:
         - metrics.crossplane.io
         - pkg.crossplane.io
         - aws.platform.upbound.io
+        - eks.aws.m.upbound.io
     deployment:
       replicas: 1
       image:

@@ -1,0 +1,67 @@
+# PromQL tests for examples/metrics/eks/condition-age.yaml
+# Run with: promtool test rules promql-tests/eks/condition-age_test.yaml
+#
+# Metric: eks_ready_last_transition_timestamp (gauge) - Unix timestamp of last transition
+# Generated from: promql-tests/fixtures/metrics.prom
+#
+# NOTE: time()-based queries need a separate test block with controlled timestamps
+# because promtool's time() returns seconds from epoch=0, not real wallclock time.
+
+evaluation_interval: 1m
+
+tests:
+  # Test 1: Verify timestamp values exist
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "1773137494"
+      - series: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1773137494"
+      - series: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "1773137494"
+
+    promql_expr_test:
+      # Verify timestamp values exist for not-ready resources
+      - expr: kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 1773137494
+          - labels: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 1773137494
+          - labels: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 1773137494
+
+      # No resources with ready_status=True
+      - expr: kube_customresource_eks_ready_last_transition_timestamp{ready_status="True"}
+        eval_time: 0m
+        exp_samples: []
+
+  # Test 2: time()-based queries with controlled timestamps
+  # In promtool, time() returns seconds since epoch (0) + eval_time offset.
+  # We set transition at t=100s and test at t=600s (10m), so duration = 500s.
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_ready_last_transition_timestamp{ready_status="False",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "100 100 100 100 100 100 100 100 100 100 100"
+
+    promql_expr_test:
+      # At eval_time=10m, time()=600. Duration = 600-100 = 500s > 300s (5 min) → alert fires
+      # Binary comparison drops __name__ and returns the computed value (500)
+      - expr: (time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}) > 300
+        eval_time: 10m
+        exp_samples:
+          - labels: '{ready_status="False",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 500
+
+      # At eval_time=3m, time()=180. Duration = 180-100 = 80s < 300s → alert does NOT fire
+      - expr: (time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}) > 300
+        eval_time: 3m
+        exp_samples: []
+
+      # Average time in not-ready state at eval_time=10m: (600-100)/3600 = 0.1389 hours
+      - expr: avg((time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}) / 3600)
+        eval_time: 10m
+        exp_samples:
+          - labels: '{}'
+            value: 1.388888888888889E-01

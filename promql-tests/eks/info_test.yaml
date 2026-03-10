@@ -1,0 +1,57 @@
+# PromQL tests for examples/metrics/eks/info.yaml
+# Run with: promtool test rules promql-tests/eks/info_test.yaml
+#
+# Metric: eks_info (gauge) - Always 1, with configuration details as labels
+# Generated from: promql-tests/fixtures/metrics.prom
+#
+# NOTE: Join query requires eks_ready series as well.
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # eks_info series
+      - series: 'kube_customresource_eks_info{id="production-eks",instance_type="m5.xlarge",node_count="3",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_info{id="staging-eks",instance_type="t3.medium",node_count="2",region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_info{id="dev-eks",instance_type="t3.small",node_count="1",region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1"
+      # eks_ready series (needed for join query)
+      - series: 'kube_customresource_eks_ready{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "0"
+
+    promql_expr_test:
+      # List all EKS clusters with config
+      - expr: kube_customresource_eks_info
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_info{id="production-eks",instance_type="m5.xlarge",node_count="3",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 1
+          - labels: 'kube_customresource_eks_info{id="staging-eks",instance_type="t3.medium",node_count="2",region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 1
+          - labels: 'kube_customresource_eks_info{id="dev-eks",instance_type="t3.small",node_count="1",region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 1
+
+      # Filter by region
+      - expr: kube_customresource_eks_info{region="us-west-2"}
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_info{id="production-eks",instance_type="m5.xlarge",node_count="3",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 1
+
+      # Join with ready status (binary ops drop __name__, keep left-side + group_left labels)
+      - expr: kube_customresource_eks_ready * on(name) group_left(region, instance_type) kube_customresource_eks_info
+        eval_time: 0m
+        exp_samples:
+          - labels: '{group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",instance_type="m5.xlarge",region="us-west-2",name="production-eks",namespace="team-a"}'
+            value: 0
+          - labels: '{group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",instance_type="t3.medium",region="eu-west-1",name="staging-eks",namespace="team-a"}'
+            value: 0
+          - labels: '{group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",instance_type="t3.small",region="us-east-1",name="dev-eks",namespace="team-b"}'
+            value: 0

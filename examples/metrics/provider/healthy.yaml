@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - provider_healthy (gauge): 1=healthy, 0=unhealthy
+# - kube_customresource_provider_healthy (gauge): 1=healthy, 0=unhealthy
 #
 # PromQL Queries:
-# - Unhealthy providers: provider_healthy == 0
-# - Alert on specific provider: provider_healthy{name="upbound-provider-aws-eks"} == 0
-# - Provider health percentage: (sum(provider_healthy) / count(provider_healthy)) * 100
+# - Unhealthy providers: kube_customresource_provider_healthy == 0
+# - Alert on specific provider: kube_customresource_provider_healthy{name="upbound-provider-aws-eks"} == 0
+# - Provider health percentage: (sum(kube_customresource_provider_healthy) / count(kube_customresource_provider_healthy)) * 100
 #
 # Target Resource:
 #   apiVersion: pkg.crossplane.io/v1

@@ -8,14 +8,14 @@
 # - More flexible than CEL for complex logic
 #
 # Metrics Generated:
-# - eks_condition_status (gauge): 1=True, 0=False, -1=Unknown
+# - kube_customresource_eks_condition_status (gauge): 1=True, 0=False, -1=Unknown
 #   - One metric per condition type (Ready, Synced, etc.)
 #
 # PromQL Queries:
-# - Not synced XRs: eks_condition_status{condition_type="Synced"} == 0
-# - Not ready XRs: eks_condition_status{condition_type="Ready"} == 0
-# - Unknown conditions: eks_condition_status == -1
-# - Count by condition type: sum by (condition_type) (eks_condition_status == 1)
+# - Not synced XRs: kube_customresource_eks_condition_status{condition_type="Synced"} == 0
+# - Not ready XRs: kube_customresource_eks_condition_status{condition_type="Ready"} == 0
+# - Unknown conditions: kube_customresource_eks_condition_status == -1
+# - Count by condition type: sum by (condition_type) (kube_customresource_eks_condition_status == 1)
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

@@ -1,10 +1,13 @@
-name: Composition Tests
+name: Tests
 
 on:
   push:
     branches:
       - main
   pull_request: {}
+
+env:
+  PROMTOOL_VERSION: "3.10.0"
 
 jobs:
   composition-tests:
@@ -24,3 +27,18 @@ jobs:
 
       - name: Run composition tests
         run: up test run tests/*
+
+  promql-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Install promtool
+        run: |
+          curl -fsSL "https://github.com/prometheus/prometheus/releases/download/v${PROMTOOL_VERSION}/prometheus-${PROMTOOL_VERSION}.linux-amd64.tar.gz" \
+            | tar xzf - --strip-components=1 -C /usr/local/bin "prometheus-${PROMTOOL_VERSION}.linux-amd64/promtool"
+          promtool --version
+
+      - name: Run PromQL tests
+        run: make promql-test

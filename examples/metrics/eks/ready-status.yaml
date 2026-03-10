@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - eks_ready (gauge): 1=ready, 0=not ready
+# - kube_customresource_eks_ready (gauge): 1=ready, 0=not ready
 #
 # PromQL Queries:
-# - Not-ready EKS clusters: eks_ready{name="configuration-aws-eks"} == 0
-# - SLO percentage: (sum(eks_ready == 1) / count(eks_ready)) * 100
-# - Alert on any not-ready XR: eks_ready == 0
+# - Not-ready EKS clusters: kube_customresource_eks_ready{name="configuration-aws-eks"} == 0
+# - SLO percentage: (sum(kube_customresource_eks_ready == 1) / count(kube_customresource_eks_ready)) * 100
+# - Alert on any not-ready XR: kube_customresource_eks_ready == 0
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

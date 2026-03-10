@@ -15,8 +15,8 @@
 # - Both can be set - whichever is hit first takes effect
 #
 # Metrics Generated:
-# - eks_ready_limited (gauge): Ready status with cardinality protection
-# - eks_synced_limited (gauge): Synced status with cardinality protection
+# - kube_customresource_eks_ready_limited (gauge): Ready status with cardinality protection
+# - kube_customresource_eks_synced_limited (gauge): Synced status with cardinality protection
 #
 # PromQL Queries:
 # - Same as regular ready/synced queries, but with cardinality safety

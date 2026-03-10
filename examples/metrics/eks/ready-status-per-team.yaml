@@ -14,11 +14,11 @@
 #   Each team only sees metrics for their own resources.
 #
 # Metrics Generated:
-# - eks_team_ready (gauge): 1=ready, 0=not ready (only for team-a resources)
+# - kube_customresource_eks_team_ready (gauge): 1=ready, 0=not ready (only for team-a resources)
 #
 # PromQL Queries:
-# - Not-ready team-a clusters: eks_team_ready{team="team-a"} == 0
-# - Team-a ready percentage: (sum(eks_team_ready{team="team-a"} == 1) / count(eks_team_ready{team="team-a"})) * 100
+# - Not-ready team-a clusters: kube_customresource_eks_team_ready{team="team-a"} == 0
+# - Team-a ready percentage: (sum(kube_customresource_eks_team_ready{team="team-a"} == 1) / count(kube_customresource_eks_team_ready{team="team-a"})) * 100
 #
 
 ---

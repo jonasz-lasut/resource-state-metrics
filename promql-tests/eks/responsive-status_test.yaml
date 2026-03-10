@@ -1,0 +1,40 @@
+# PromQL tests for examples/metrics/eks/responsive-status.yaml
+# Run with: promtool test rules promql-tests/eks/responsive-status_test.yaml
+#
+# Metric: eks_responsive (gauge) - 1=responsive (circuit closed), 0=not responsive (circuit open)
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_responsive{region="eu-west-1",responsive_reason="WatchCircuitClosed",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_responsive{region="us-east-1",responsive_reason="WatchCircuitClosed",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1"
+      - series: 'kube_customresource_eks_responsive{region="us-west-2",responsive_reason="WatchCircuitClosed",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "1"
+
+    promql_expr_test:
+      # XRs with open circuit breaker (all responsive, so empty)
+      - expr: kube_customresource_eks_responsive == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Alert on throttled XRs by name (responsive=1, so == 0 returns empty)
+      - expr: kube_customresource_eks_responsive{name="production-eks"} == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Responsive percentage (all responsive, so 100%)
+      - expr: (sum(kube_customresource_eks_responsive == 1) / count(kube_customresource_eks_responsive)) * 100
+        eval_time: 0m
+        exp_samples:
+          - labels: '{}'
+            value: 100
+
+      # Throttled XRs by region (none throttled, so empty)
+      - expr: sum by (region) (kube_customresource_eks_responsive == 0)
+        eval_time: 0m
+        exp_samples: []

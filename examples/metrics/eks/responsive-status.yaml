@@ -8,13 +8,13 @@
 # This metric exposes that state for alerting and dashboards.
 #
 # Metrics Generated:
-# - eks_responsive (gauge): 1=responsive (circuit closed), 0=not responsive (circuit open)
+# - kube_customresource_eks_responsive (gauge): 1=responsive (circuit closed), 0=not responsive (circuit open)
 #
 # PromQL Queries:
-# - XRs with open circuit breaker: eks_responsive == 0
-# - Alert on throttled XRs: eks_responsive{name="production-eks"} == 0
-# - Responsive percentage: (sum(eks_responsive == 1) / count(eks_responsive)) * 100
-# - Throttled XRs by region: sum by (region) (eks_responsive == 0)
+# - XRs with open circuit breaker: kube_customresource_eks_responsive == 0
+# - Alert on throttled XRs: kube_customresource_eks_responsive{name="production-eks"} == 0
+# - Responsive percentage: (sum(kube_customresource_eks_responsive == 1) / count(kube_customresource_eks_responsive)) * 100
+# - Throttled XRs by region: sum by (region) (kube_customresource_eks_responsive == 0)
 #
 # Related Crossplane Core Metrics:
 # - circuit_breaker_opens_total: count of closed→open transitions

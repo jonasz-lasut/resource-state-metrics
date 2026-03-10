@@ -1,0 +1,67 @@
+# PromQL tests for examples/metrics/eks/mr-ready-status.yaml
+# Run with: promtool test rules promql-tests/eks/mr-ready-status_test.yaml
+#
+# Metrics: eks_mr_cluster_synced, eks_mr_cluster_ready (gauges)
+# Target: eks.aws.m.upbound.io/v1beta1 Cluster (Managed Resources)
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # eks_mr_cluster_synced
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="us-west-2",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="eu-west-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="us-east-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+        values: "0"
+      # eks_mr_cluster_ready
+      - series: 'kube_customresource_eks_mr_cluster_ready{region="us-west-2",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_ready{region="eu-west-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_ready{region="us-east-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+        values: "0"
+
+    promql_expr_test:
+      # Not-synced MRs
+      - expr: kube_customresource_eks_mr_cluster_synced == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="us-west-2",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="eu-west-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="us-east-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+            value: 0
+
+      # Group sync failures by reason (sum of values, all are 0, so sum=0)
+      - expr: sum by (sync_reason) (kube_customresource_eks_mr_cluster_synced == 0)
+        eval_time: 0m
+        exp_samples:
+          - labels: '{sync_reason="ReconcileError"}'
+            value: 0
+
+      # MRs with ReconcileError
+      - expr: kube_customresource_eks_mr_cluster_synced{sync_reason="ReconcileError"} == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="us-west-2",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="eu-west-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_synced{region="us-east-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+            value: 0
+
+      # Not-ready MRs
+      - expr: kube_customresource_eks_mr_cluster_ready == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_mr_cluster_ready{region="us-west-2",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_ready{region="eu-west-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_mr_cluster_ready{region="us-east-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+            value: 0

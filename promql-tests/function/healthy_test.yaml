@@ -1,0 +1,49 @@
+# PromQL tests for examples/metrics/function/healthy.yaml
+# Run with: promtool test rules promql-tests/function/healthy_test.yaml
+#
+# Metrics: function_healthy, function_installed (gauges)
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # function_healthy
+      - series: 'kube_customresource_function_healthy{package="xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.6.1",revision="crossplane-contrib-function-auto-ready-1a91c1ec8733",group="pkg.crossplane.io",version="v1",kind="Function",name="crossplane-contrib-function-auto-ready",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_healthy{package="ghcr.io/crossplane-contrib/resource-state-metrics_rsm@sha256:c2020a64da667d407474e013b4a8afdddb72a07b8fc0ccbd5ab781cacc37f0a6",revision="crossplane-contrib-resource-state-metricsrsm-c2020a64da66",group="pkg.crossplane.io",version="v1",kind="Function",name="crossplane-contrib-resource-state-metricsrsm",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_healthy{package="xpkg.upbound.io/upbound/configuration-aws-eks_eks@sha256:938a50a6b01808daaa4dcb2dbda3fe1d7bd38e2d3cfb0f06c50468f894aa12d1",revision="upbound-configuration-aws-ekseks-938a50a6b018",group="pkg.crossplane.io",version="v1",kind="Function",name="upbound-configuration-aws-ekseks",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_healthy{package="xpkg.upbound.io/upbound/configuration-aws-network_network@sha256:58e560624a2cb9eb054782751ad6604e6365e0e53a3aec1965be0c0dfecdd082",revision="upbound-configuration-aws-networknetwork-58e560624a2c",group="pkg.crossplane.io",version="v1",kind="Function",name="upbound-configuration-aws-networknetwork",namespace=""}'
+        values: "1"
+      # function_installed
+      - series: 'kube_customresource_function_installed{package="xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.6.1",group="pkg.crossplane.io",version="v1",kind="Function",name="crossplane-contrib-function-auto-ready",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_installed{package="ghcr.io/crossplane-contrib/resource-state-metrics_rsm@sha256:c2020a64da667d407474e013b4a8afdddb72a07b8fc0ccbd5ab781cacc37f0a6",group="pkg.crossplane.io",version="v1",kind="Function",name="crossplane-contrib-resource-state-metricsrsm",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_installed{package="xpkg.upbound.io/upbound/configuration-aws-eks_eks@sha256:938a50a6b01808daaa4dcb2dbda3fe1d7bd38e2d3cfb0f06c50468f894aa12d1",group="pkg.crossplane.io",version="v1",kind="Function",name="upbound-configuration-aws-ekseks",namespace=""}'
+        values: "1"
+      - series: 'kube_customresource_function_installed{package="xpkg.upbound.io/upbound/configuration-aws-network_network@sha256:58e560624a2cb9eb054782751ad6604e6365e0e53a3aec1965be0c0dfecdd082",group="pkg.crossplane.io",version="v1",kind="Function",name="upbound-configuration-aws-networknetwork",namespace=""}'
+        values: "1"
+
+    promql_expr_test:
+      # Unhealthy functions (all healthy, so empty)
+      - expr: kube_customresource_function_healthy == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Specific function health check
+      - expr: kube_customresource_function_healthy{name="crossplane-contrib-function-auto-ready"} == 1
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_function_healthy{package="xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.6.1",revision="crossplane-contrib-function-auto-ready-1a91c1ec8733",group="pkg.crossplane.io",version="v1",kind="Function",name="crossplane-contrib-function-auto-ready",namespace=""}'
+            value: 1
+
+      # Function health percentage (100%)
+      - expr: (sum(kube_customresource_function_healthy) / count(kube_customresource_function_healthy)) * 100
+        eval_time: 0m
+        exp_samples:
+          - labels: '{}'
+            value: 100

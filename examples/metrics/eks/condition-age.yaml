@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - eks_ready_last_transition_timestamp (gauge): Unix timestamp of last transition
+# - kube_customresource_eks_ready_last_transition_timestamp (gauge): Unix timestamp of last transition
 #
 # PromQL Queries:
-# - Alert if not-ready for > 5 minutes: (time() - eks_ready_last_transition_timestamp{ready_status="False"}) > 300
-# - Clusters transitioned to ready in last hour: (time() - eks_ready_last_transition_timestamp{ready_status="True"}) < 3600
-# - Average time in not-ready state: avg((time() - eks_ready_last_transition_timestamp{ready_status="False"}) / 3600)
+# - Alert if not-ready for > 5 minutes: (time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}) > 300
+# - Clusters transitioned to ready in last hour: (time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="True"}) < 3600
+# - Average time in not-ready state: avg((time() - kube_customresource_eks_ready_last_transition_timestamp{ready_status="False"}) / 3600)
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

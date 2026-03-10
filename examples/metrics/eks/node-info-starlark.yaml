@@ -8,11 +8,11 @@
 # - CEL and Unstructured resolvers cannot parse quantity strings
 #
 # Metrics Generated:
-# - eks_node_info (gauge): EKS cluster node configuration details
+# - kube_customresource_eks_node_info (gauge): EKS cluster node configuration details
 #
 # PromQL Queries:
-# - Total nodes across all clusters: sum(eks_node_info{info="node_count"})
-# - Clusters by instance type: count by (instance_type) (eks_node_info{info="node_count"})
+# - Total nodes across all clusters: sum(kube_customresource_eks_node_info{info="node_count"})
+# - Clusters by instance type: count by (instance_type) (kube_customresource_eks_node_info{info="node_count"})
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

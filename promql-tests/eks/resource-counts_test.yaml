@@ -1,0 +1,47 @@
+# PromQL tests for examples/metrics/eks/resource-counts.yaml
+# Run with: promtool test rules promql-tests/eks/resource-counts_test.yaml
+#
+# Metric: eks_resource_count (gauge) - Number of managed resources in each XR
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_resource_count{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "7"
+      - series: 'kube_customresource_eks_resource_count{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "7"
+      - series: 'kube_customresource_eks_resource_count{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "7"
+
+    promql_expr_test:
+      # Resources per cluster (bare metric)
+      - expr: kube_customresource_eks_resource_count
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_resource_count{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 7
+          - labels: 'kube_customresource_eks_resource_count{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 7
+          - labels: 'kube_customresource_eks_resource_count{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 7
+
+      # Total managed resources across all XRs
+      - expr: sum(kube_customresource_eks_resource_count)
+        eval_time: 0m
+        exp_samples:
+          - labels: '{}'
+            value: 21
+
+      # Largest clusters by resource count
+      - expr: topk(10, kube_customresource_eks_resource_count)
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_resource_count{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 7
+          - labels: 'kube_customresource_eks_resource_count{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 7
+          - labels: 'kube_customresource_eks_resource_count{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 7

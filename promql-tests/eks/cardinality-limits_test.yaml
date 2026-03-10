@@ -1,0 +1,46 @@
+# PromQL tests for examples/metrics/eks/cardinality-limits.yaml
+# Run with: promtool test rules promql-tests/eks/cardinality-limits_test.yaml
+#
+# Metrics: eks_ready_limited, eks_synced_limited (gauges) - same as regular ready/synced but with cardinality protection
+# Generated from: promql-tests/fixtures/metrics.prom
+#
+# NOTE: Cardinality limits are a configuration-level feature (store/family cardinalityLimit).
+# The PromQL queries are identical to regular ready/synced - the protection happens at
+# metric generation time, not query time.
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # eks_ready_limited
+      - series: 'kube_customresource_eks_ready_limited{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready_limited{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready_limited{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "0"
+      # eks_synced_limited
+      - series: 'kube_customresource_eks_synced_limited{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_synced_limited{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_synced_limited{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1"
+
+    promql_expr_test:
+      # Not-ready XRs (same query as regular ready, with cardinality safety)
+      - expr: kube_customresource_eks_ready_limited == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_ready_limited{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_ready_limited{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_ready_limited{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 0
+
+      # All synced with cardinality protection
+      - expr: kube_customresource_eks_synced_limited == 0
+        eval_time: 0m
+        exp_samples: []

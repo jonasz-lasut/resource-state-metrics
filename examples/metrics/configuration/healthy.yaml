@@ -2,12 +2,12 @@
 # Use Case: Monitor Crossplane configurations
 #
 # Metrics Generated:
-# - configuration_healthy (gauge): 1=healthy, 0=unhealthy
+# - kube_customresource_configuration_healthy (gauge): 1=healthy, 0=unhealthy
 #
 # PromQL Queries:
-# - Unhealthy configurations: configuration_healthy == 0
-# - Check RSM configuration: configuration_healthy{name="resource-state-metrics"} == 1
-# - All healthy: (sum(configuration_healthy) / count(configuration_healthy)) * 100
+# - Unhealthy configurations: kube_customresource_configuration_healthy == 0
+# - Check RSM configuration: kube_customresource_configuration_healthy{name="resource-state-metrics"} == 1
+# - All healthy: (sum(kube_customresource_configuration_healthy) / count(kube_customresource_configuration_healthy)) * 100
 #
 # Target Resource:
 #   apiVersion: pkg.crossplane.io/v1

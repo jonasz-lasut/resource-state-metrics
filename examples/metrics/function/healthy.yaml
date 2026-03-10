@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - function_healthy (gauge): 1=healthy, 0=unhealthy
+# - kube_customresource_function_healthy (gauge): 1=healthy, 0=unhealthy
 #
 # PromQL Queries:
-# - Unhealthy functions: function_healthy == 0
-# - Check specific function: function_healthy{name="crossplane-contrib-function-auto-ready"} == 1
-# - Function health percentage: (sum(function_healthy) / count(function_healthy)) * 100
+# - Unhealthy functions: kube_customresource_function_healthy == 0
+# - Check specific function: kube_customresource_function_healthy{name="crossplane-contrib-function-auto-ready"} == 1
+# - Function health percentage: (sum(kube_customresource_function_healthy) / count(kube_customresource_function_healthy)) * 100
 #
 # Target Resource:
 #   apiVersion: pkg.crossplane.io/v1

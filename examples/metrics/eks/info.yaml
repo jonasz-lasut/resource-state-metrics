@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - eks_info (gauge): Always 1, with configuration details as labels
+# - kube_customresource_eks_info (gauge): Always 1, with configuration details as labels
 #
 # PromQL Queries:
-# - List all EKS clusters with config: eks_info
-# - Filter by region: eks_info{region="us-west-2"}
-# - Join with ready status: eks_ready * on(name) group_left(region, instance_type) eks_info
+# - List all EKS clusters with config: kube_customresource_eks_info
+# - Filter by region: kube_customresource_eks_info{region="us-west-2"}
+# - Join with ready status: kube_customresource_eks_ready * on(name) group_left(region, instance_type) kube_customresource_eks_info
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

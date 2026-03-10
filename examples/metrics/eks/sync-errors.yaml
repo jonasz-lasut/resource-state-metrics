@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - eks_synced (gauge): 1=synced, 0=not synced
+# - kube_customresource_eks_synced (gauge): 1=synced, 0=not synced
 #
 # PromQL Queries:
-# - Group sync failures by reason: sum by (sync_reason) (eks_synced == 0)
-# - Alert on ReconcileError: eks_synced{sync_reason="ReconcileError"} == 0
-# - Check specific cluster: eks_synced{name="configuration-aws-eks"}
+# - Group sync failures by reason: sum by (sync_reason) (kube_customresource_eks_synced == 0)
+# - Alert on ReconcileError: kube_customresource_eks_synced{sync_reason="ReconcileError"} == 0
+# - Check specific cluster: kube_customresource_eks_synced{name="configuration-aws-eks"}
 #
 # Target XR:
 #   apiVersion: aws.platform.upbound.io/v1alpha1

@@ -1,0 +1,36 @@
+# PromQL tests for examples/metrics/eks/node-info-starlark.yaml
+# Run with: promtool test rules promql-tests/eks/node-info-starlark_test.yaml
+#
+# Metric: eks_node_info (gauge) - EKS cluster node configuration details
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_node_info{info="node_count",instance_type="m5.xlarge",region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "3"
+      - series: 'kube_customresource_eks_node_info{info="node_count",instance_type="t3.medium",region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "2"
+      - series: 'kube_customresource_eks_node_info{info="node_count",instance_type="t3.small",region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1"
+
+    promql_expr_test:
+      # Total nodes across all clusters
+      - expr: sum(kube_customresource_eks_node_info{info="node_count"})
+        eval_time: 0m
+        exp_samples:
+          - labels: '{}'
+            value: 6
+
+      # Clusters by instance type
+      - expr: count by (instance_type) (kube_customresource_eks_node_info{info="node_count"})
+        eval_time: 0m
+        exp_samples:
+          - labels: '{instance_type="m5.xlarge"}'
+            value: 1
+          - labels: '{instance_type="t3.medium"}'
+            value: 1
+          - labels: '{instance_type="t3.small"}'
+            value: 1

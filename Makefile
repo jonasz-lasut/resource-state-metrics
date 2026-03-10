@@ -73,6 +73,35 @@ push-multiarch: clone
 clean:
 	rm -rf .upstream
 
+# PromQL Testing
+METRICS_FIXTURE  ?= promql-tests/fixtures/metrics.prom
+PROMTOOL         ?= promtool
+
+.PHONY: promql-test
+promql-test: ## Run all promtool PromQL tests
+	@echo "Running PromQL tests..."
+	@find promql-tests -name '*_test.yaml' -exec $(PROMTOOL) test rules {} +
+	@echo "All PromQL tests passed."
+
+.PHONY: generate-input-series
+generate-input-series: ## Generate promtool input_series YAML from scraped metrics fixture
+	@if [ ! -f "$(METRICS_FIXTURE)" ]; then \
+		echo "Error: Metrics fixture not found: $(METRICS_FIXTURE)"; \
+		echo "Scrape metrics from RSM and save to $(METRICS_FIXTURE)"; \
+		exit 1; \
+	fi
+	@echo "    input_series:"
+	@while IFS= read -r line; do \
+		case "$$line" in \
+			""|\#*) continue ;; \
+		esac; \
+		series=$$(echo "$$line" | sed 's/[[:space:]][[:space:]]*[0-9eE.+-]*$$//'); \
+		value=$$(echo "$$line" | sed 's/.*[[:space:]][[:space:]]*//'); \
+		value=$$(echo "$$value" | sed 's/\.0\{1,\}$$//'); \
+		echo "      - series: '$$series'"; \
+		echo "        values: \"$$value\""; \
+	done < "$(METRICS_FIXTURE)"
+
 .PHONY: info
 info:
 	@echo "Upstream repo:   $(UPSTREAM_REPO)"

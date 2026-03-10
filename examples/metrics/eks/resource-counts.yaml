@@ -3,12 +3,12 @@
 # Resolver: CEL (Common Expression Language)
 #
 # Metrics Generated:
-# - eks_resource_count (gauge): Number of managed resources in each XR
+# - kube_customresource_eks_resource_count (gauge): Number of managed resources in each XR
 #
 # PromQL Queries:
-# - Total managed resources: sum(eks_resource_count)
-# - Resources per cluster: eks_resource_count
-# - Largest clusters: topk(10, eks_resource_count)
+# - Total managed resources: sum(kube_customresource_eks_resource_count)
+# - Resources per cluster: kube_customresource_eks_resource_count
+# - Largest clusters: topk(10, kube_customresource_eks_resource_count)
 #
 # NOTE: This is a gauge (not a counter) because resource counts can go up AND down
 # as resources are created or deleted. In RSM, names ending with _total are

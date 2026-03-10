@@ -1,0 +1,41 @@
+# PromQL tests for examples/metrics/eks/ready-status.yaml
+# Run with: promtool test rules promql-tests/eks/ready-status_test.yaml
+#
+# Metric: eks_ready (gauge) - 1=ready, 0=not ready
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_ready{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_ready{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "0"
+
+    promql_expr_test:
+      # Alert on any not-ready XR
+      - expr: kube_customresource_eks_ready == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_ready{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_ready{region="eu-west-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+            value: 0
+          - labels: 'kube_customresource_eks_ready{region="us-east-1",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+            value: 0
+
+      # Not-ready EKS clusters by name
+      - expr: kube_customresource_eks_ready{name="production-eks"} == 0
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_ready{region="us-west-2",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 0
+
+      # SLO percentage - when no XRs are ready, sum(== 1) returns nil so division is nil
+      - expr: (sum(kube_customresource_eks_ready == 1) / count(kube_customresource_eks_ready)) * 100
+        eval_time: 0m
+        exp_samples: []

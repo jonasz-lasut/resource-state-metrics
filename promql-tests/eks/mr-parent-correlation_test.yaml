@@ -1,0 +1,69 @@
+# PromQL tests for examples/metrics/eks/mr-parent-correlation.yaml
+# Run with: promtool test rules promql-tests/eks/mr-parent-correlation_test.yaml
+#
+# Metric: eks_mr_cluster_info (gauge) - Always 1, with parent correlation labels
+# Target: eks.aws.m.upbound.io/v1beta1 Cluster (Managed Resources)
+# Generated from: promql-tests/fixtures/metrics.prom
+#
+# NOTE: Join and grouped queries need eks_mr_cluster_synced series as well.
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # eks_mr_cluster_info
+      - series: 'kube_customresource_eks_mr_cluster_info{composite="production-eks",composition_resource="kubernetesCluster",external_name="production-eks-fc662e179f20",region="us-west-2",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_mr_cluster_info{composite="staging-eks",composition_resource="kubernetesCluster",external_name="staging-eks-cf5379ecb464",region="eu-west-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_mr_cluster_info{composite="dev-eks",composition_resource="kubernetesCluster",external_name="dev-eks-c783272e5597",region="us-east-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+        values: "1"
+      # eks_mr_cluster_synced (needed for join and grouped queries)
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="us-west-2",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="eu-west-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+        values: "0"
+      - series: 'kube_customresource_eks_mr_cluster_synced{region="us-east-1",sync_reason="ReconcileError",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+        values: "0"
+
+    promql_expr_test:
+      # List all MRs with their parent XR (bare metric)
+      - expr: kube_customresource_eks_mr_cluster_info
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_mr_cluster_info{composite="production-eks",composition_resource="kubernetesCluster",external_name="production-eks-fc662e179f20",region="us-west-2",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 1
+          - labels: 'kube_customresource_eks_mr_cluster_info{composite="staging-eks",composition_resource="kubernetesCluster",external_name="staging-eks-cf5379ecb464",region="eu-west-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+            value: 1
+          - labels: 'kube_customresource_eks_mr_cluster_info{composite="dev-eks",composition_resource="kubernetesCluster",external_name="dev-eks-c783272e5597",region="us-east-1",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="dev-eks-c783272e5597",namespace="team-b"}'
+            value: 1
+
+      # Find all MRs belonging to a specific XR
+      - expr: kube_customresource_eks_mr_cluster_info{composite="production-eks"}
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_mr_cluster_info{composite="production-eks",composition_resource="kubernetesCluster",external_name="production-eks-fc662e179f20",region="us-west-2",group="eks.aws.m.upbound.io",version="v1beta1",kind="Cluster",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 1
+
+      # Join MR sync status with parent correlation info (binary ops drop __name__)
+      - expr: kube_customresource_eks_mr_cluster_synced * on(name,namespace) group_left(composite, composition_resource, external_name) kube_customresource_eks_mr_cluster_info
+        eval_time: 0m
+        exp_samples:
+          - labels: '{composite="production-eks",composition_resource="kubernetesCluster",external_name="production-eks-fc662e179f20",group="eks.aws.m.upbound.io",kind="Cluster",version="v1beta1",region="us-west-2",sync_reason="ReconcileError",name="production-eks-fc662e179f20",namespace="team-a"}'
+            value: 0
+          - labels: '{composite="staging-eks",composition_resource="kubernetesCluster",external_name="staging-eks-cf5379ecb464",group="eks.aws.m.upbound.io",kind="Cluster",version="v1beta1",region="eu-west-1",sync_reason="ReconcileError",name="staging-eks-cf5379ecb464",namespace="team-a"}'
+            value: 0
+          - labels: '{composite="dev-eks",composition_resource="kubernetesCluster",external_name="dev-eks-c783272e5597",group="eks.aws.m.upbound.io",kind="Cluster",version="v1beta1",region="us-east-1",sync_reason="ReconcileError",name="dev-eks-c783272e5597",namespace="team-b"}'
+            value: 0
+
+      # Not-synced MRs grouped by parent XR (sum of values, all are 0, so sum=0)
+      - expr: sum by (composite) (kube_customresource_eks_mr_cluster_synced * on(name,namespace) group_left(composite) kube_customresource_eks_mr_cluster_info == 0)
+        eval_time: 0m
+        exp_samples:
+          - labels: '{composite="production-eks"}'
+            value: 0
+          - labels: '{composite="staging-eks"}'
+            value: 0
+          - labels: '{composite="dev-eks"}'
+            value: 0

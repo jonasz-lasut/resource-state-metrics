@@ -8,12 +8,12 @@
 # - Simpler than Starlark for straightforward array-to-metrics expansion
 #
 # Metrics Generated:
-# - eks_condition (gauge): 1=True, 0=False per condition type
+# - kube_customresource_eks_condition (gauge): 1=True, 0=False per condition type
 #
 # PromQL Queries:
-# - Not-ready XRs: eks_condition{condition_type="Ready"} == 0
-# - Not-synced XRs: eks_condition{condition_type="Synced"} == 0
-# - All failing conditions: eks_condition == 0
+# - Not-ready XRs: kube_customresource_eks_condition{condition_type="Ready"} == 0
+# - Not-synced XRs: kube_customresource_eks_condition{condition_type="Synced"} == 0
+# - All failing conditions: kube_customresource_eks_condition == 0
 #
 # NOTE: This uses metric-level resolver override. The resolver is set on the
 # metric itself rather than the store or family, allowing mixed resolvers within

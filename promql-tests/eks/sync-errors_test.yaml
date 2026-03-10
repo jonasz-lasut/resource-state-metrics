@@ -1,0 +1,35 @@
+# PromQL tests for examples/metrics/eks/sync-errors.yaml
+# Run with: promtool test rules promql-tests/eks/sync-errors_test.yaml
+#
+# Metric: eks_synced (gauge) - 1=synced, 0=not synced
+# Generated from: promql-tests/fixtures/metrics.prom
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_customresource_eks_synced{region="eu-west-1",sync_reason="ReconcileSuccess",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="staging-eks",namespace="team-a"}'
+        values: "1"
+      - series: 'kube_customresource_eks_synced{region="us-east-1",sync_reason="ReconcileSuccess",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="dev-eks",namespace="team-b"}'
+        values: "1"
+      - series: 'kube_customresource_eks_synced{region="us-west-2",sync_reason="ReconcileSuccess",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+        values: "1"
+
+    promql_expr_test:
+      # Group sync failures by reason (all synced, so empty)
+      - expr: sum by (sync_reason) (kube_customresource_eks_synced == 0)
+        eval_time: 0m
+        exp_samples: []
+
+      # Alert on ReconcileError (none, so empty)
+      - expr: kube_customresource_eks_synced{sync_reason="ReconcileError"} == 0
+        eval_time: 0m
+        exp_samples: []
+
+      # Check specific cluster sync status
+      - expr: kube_customresource_eks_synced{name="production-eks"}
+        eval_time: 0m
+        exp_samples:
+          - labels: 'kube_customresource_eks_synced{region="us-west-2",sync_reason="ReconcileSuccess",group="aws.platform.upbound.io",version="v1alpha1",kind="EKS",name="production-eks",namespace="team-a"}'
+            value: 1
