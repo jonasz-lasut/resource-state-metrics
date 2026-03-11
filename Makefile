@@ -107,3 +107,72 @@ info:
 	@echo "Upstream repo:   $(UPSTREAM_REPO)"
 	@echo "Upstream commit: $(UPSTREAM_COMMIT)"
 	@echo "Image:           $(IMAGE)"
+
+# Local Development Environment
+MONITORING_NS    ?= monitoring
+RSM_NAMESPACE    ?= resource-state-metrics
+
+.PHONY: local
+local:
+	up project run --local
+	kubectl apply -f examples/rbac-crossplane.yaml
+	kubectl apply -f examples/xr-rsm.yaml
+	kubectl apply -f examples/configuration-eks.yaml
+	kubectl wait configuration.pkg --all --for=condition=Healthy --timeout 5m
+	kubectl wait configuration.pkg --all --for=condition=Installed --timeout 5m
+	kubectl wait configurationrevisions.pkg --all --for=condition=RevisionHealthy --timeout 10m
+	kubectl wait provider.pkg --all --for=condition=Healthy --timeout 5m
+	kubectl wait provider.pkg --all --for=condition=Installed --timeout 5m
+	kubectl wait providerrevisions.pkg --all --for=condition=RevisionHealthy --timeout 5m
+	kubectl wait function.pkg --all --for=condition=Healthy --timeout 5m
+	kubectl wait function.pkg --all --for=condition=Installed --timeout 5m
+	kubectl wait functionrevisions.pkg --all --for=condition=RevisionHealthy --timeout 5m
+	@for i in $$(seq 1 60); do \
+		kubectl get namespace $(RSM_NAMESPACE) >/dev/null 2>&1 && break; \
+		sleep 5; \
+	done
+	kubectl wait --for=condition=available deployment/resource-state-metrics \
+		-n $(RSM_NAMESPACE) --timeout=300s
+	kubectl create namespace team-a --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create namespace team-b --dry-run=client -o yaml | kubectl apply -f -
+	kubectl apply -R -f examples/metrics/
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
+	helm repo update prometheus-community
+	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+		--namespace $(MONITORING_NS) --create-namespace \
+		--set prometheus.prometheusSpec.additionalScrapeConfigs[0].job_name=resource-state-metrics \
+		--set prometheus.prometheusSpec.additionalScrapeConfigs[0].scrape_interval=15s \
+		--set "prometheus.prometheusSpec.additionalScrapeConfigs[0].scrape_protocols[0]=PrometheusText0.0.4" \
+		--set "prometheus.prometheusSpec.additionalScrapeConfigs[0].static_configs[0].targets[0]=resource-state-metrics.$(RSM_NAMESPACE).svc.cluster.local:9999" \
+		--set prometheus.prometheusSpec.additionalScrapeConfigs[1].job_name=resource-state-metrics-telemetry \
+		--set prometheus.prometheusSpec.additionalScrapeConfigs[1].scrape_interval=15s \
+		--set "prometheus.prometheusSpec.additionalScrapeConfigs[1].scrape_protocols[0]=PrometheusText0.0.4" \
+		--set "prometheus.prometheusSpec.additionalScrapeConfigs[1].static_configs[0].targets[0]=resource-state-metrics.$(RSM_NAMESPACE).svc.cluster.local:9998" \
+		--set grafana.sidecar.dashboards.enabled=true \
+		--set grafana.sidecar.dashboards.searchNamespace=$(MONITORING_NS) \
+		--wait --timeout 5m
+	@sed 's/$${DS_PROMETHEUS}/prometheus/g' examples/grafana/resource-state-metrics-dashboard.json | \
+		kubectl create configmap rsm-grafana-dashboard \
+			--namespace $(MONITORING_NS) \
+			--from-file=resource-state-metrics-dashboard.json=/dev/stdin \
+			--dry-run=client -o yaml | \
+		kubectl label --local -f - grafana_dashboard=1 -o yaml | \
+		kubectl apply -f -
+	@echo ""
+	@echo "============================================================"
+	@echo " Local environment ready!"
+	@echo "============================================================"
+	@echo " Grafana:     kubectl port-forward -n $(MONITORING_NS) svc/kube-prometheus-stack-grafana 3000:80"
+	@echo "              http://localhost:3000  (user: admin)"
+	@echo "              kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath=\"{.items[0].data.admin-password}\" | base64 --decode ; echo"
+	@echo ""
+	@echo " Prometheus:  kubectl port-forward -n $(MONITORING_NS) svc/kube-prometheus-stack-prometheus 9090:9090"
+	@echo "              http://localhost:9090"
+	@echo ""
+	@echo " RSM Metrics: kubectl port-forward -n $(RSM_NAMESPACE) svc/resource-state-metrics 9999:9999"
+	@echo "              http://localhost:9999/metrics"
+	@echo ""
+
+.PHONY: local-clean
+local-clean:
+	kind delete cluster --name upbound-resource-state-metrics-local
